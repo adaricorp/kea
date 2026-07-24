@@ -1,0 +1,14 @@
+# Git
+.git/
+.gitignore
+.github/
+
+# Docs
+README.md
+*.md
+
+# Renovate
+renovate.json
+
+# OS
+.DS_Store

@@ -25,7 +25,7 @@
 
 FROM alpine:3.24
 LABEL org.opencontainers.image.authors="Kea Developers <kea-dev@lists.isc.org>"
-LABEL org.opencontainers.image.source="https://github.com/adaricorp/kea-dhcp4"
+LABEL org.opencontainers.image.source="https://github.com/adaricorp/kea"
 LABEL org.opencontainers.image.description="Multi-arch (amd64+arm64) build of ISC's kea-dhcp6 image for Adari"
 LABEL org.opencontainers.image.licenses="MPL-2.0"
 

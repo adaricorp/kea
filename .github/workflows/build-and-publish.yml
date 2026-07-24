@@ -1,4 +1,4 @@
-name: Build and Publish kea-dhcp4 Container Image
+name: Build and Publish Kea Container Images
 
 on:
   push:
@@ -6,17 +6,15 @@ on:
       - main
       - master
     paths:
-      # Rebuild when the image inputs or this workflow change
-      - "Dockerfile"
-      - "kea-dhcp4.conf"
-      - "hiddens"
+      # Rebuild when any component's inputs or this workflow change
+      - "kea-dhcp4/**"
+      - "kea-dhcp6/**"
       - ".github/workflows/build-and-publish.yml"
   # Allow manual trigger
   workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: adaricorp/kea-dhcp4
 
 jobs:
   build-and-push:
@@ -24,26 +22,33 @@ jobs:
     permissions:
       contents: read
       packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        # One published image per Kea component; the directory name IS the
+        # image name (ghcr.io/adaricorp/<component>).
+        component: [kea-dhcp4, kea-dhcp6]
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-      # Single source of truth: the pinned `ARG VERSION=` in the Dockerfile.
-      # Renovate bumps it (docker datasource on ISC's cloudsmith kea-dhcp4),
-      # and BOTH the apk install (isc-kea-dhcp4~=${VERSION}) and the published
-      # image tag derive from it, so the tag can never drift from the binaries.
+      # Single source of truth: the pinned `ARG VERSION=` in each component's
+      # Dockerfile. Renovate bumps them (docker datasource on ISC's cloudsmith
+      # images), and BOTH the apk install (isc-kea-dhcpN~=${VERSION}) and the
+      # published image tag derive from it, so the tag can never drift from the
+      # binaries.
       - name: Determine Kea version from Dockerfile
         id: version
         run: |
-          version="$(grep -oP '^ARG VERSION=\K.*' Dockerfile)"
+          version="$(grep -oP '^ARG VERSION=\K.*' '${{ matrix.component }}/Dockerfile')"
           if [ -z "$version" ]; then
-            echo "::error::Could not read 'ARG VERSION=' from Dockerfile"
+            echo "::error::Could not read 'ARG VERSION=' from ${{ matrix.component }}/Dockerfile"
             exit 1
           fi
           echo "kea=$version" >> "$GITHUB_OUTPUT"
           echo "kea_minor=$(echo "$version" | cut -d. -f1-2)" >> "$GITHUB_OUTPUT"
-          echo "Building kea-dhcp4 $version"
+          echo "Building ${{ matrix.component }} $version"
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v4
@@ -56,7 +61,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/adaricorp/${{ matrix.component }}
           tags: |
             # Exact kea version (what adarigod pins)
             type=raw,value=${{ steps.version.outputs.kea }}
@@ -76,18 +81,18 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v7
         with:
-          context: .
-          file: ./Dockerfile
+          context: ./${{ matrix.component }}
+          file: ./${{ matrix.component }}/Dockerfile
           push: true
           # Pass VERSION explicitly so the installed packages match the tag even
-          # if the Dockerfile default is ever edited out of step with this build.
+          # if a Dockerfile default is ever edited out of step with this build.
           build-args: |
             VERSION=${{ steps.version.outputs.kea }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ matrix.component }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.component }}
           platforms: linux/amd64,linux/arm64
 
       - name: Image digest
-        run: echo "Image pushed successfully!"
+        run: echo "${{ matrix.component }} pushed successfully!"

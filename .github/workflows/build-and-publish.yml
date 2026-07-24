@@ -27,7 +27,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # Single source of truth: the pinned `ARG VERSION=` in the Dockerfile.
       # Renovate bumps it (docker datasource on ISC's cloudsmith kea-dhcp4),

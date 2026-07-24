@@ -14,6 +14,11 @@
         "docker.cloudsmith.io/isc/docker/kea-dhcp6"
       ],
       "allowedVersions": "/^\\d+\\.\\d*[02468]\\./"
+    },
+    {
+      "description": "Auto-merge non-major updates. Thin build repo (solo maintainer + Renovate); fleet adoption is still gated by a reviewed Renovate PR in adarigod (which pins KEA_VERSION), and an image only publishes on a SUCCESSFUL build, so a bad merge fails the run rather than shipping. Majors (a base-image or Kea major) stay manual for review.",
+      "matchUpdateTypes": ["minor", "patch", "digest", "pin"],
+      "automerge": true
     }
   ]
 }

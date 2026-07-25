@@ -16,8 +16,13 @@
       "allowedVersions": "/^\\d+\\.\\d*[02468]\\./"
     },
     {
-      "description": "Auto-merge non-major updates. Thin build repo (solo maintainer + Renovate); fleet adoption is still gated by a reviewed Renovate PR in adarigod (which pins KEA_VERSION), and an image only publishes on a SUCCESSFUL build, so a bad merge fails the run rather than shipping. Majors (a base-image or Kea major) stay manual for review.",
+      "description": "Auto-merge non-major updates. Thin build repo (solo maintainer + Renovate); fleet adoption is still gated by a reviewed Renovate PR in adarigod (which pins KEA_VERSION), and an image only publishes on a SUCCESSFUL build. Base-image and Kea MAJORS stay manual (they change what ships).",
       "matchUpdateTypes": ["minor", "patch", "digest", "pin"],
+      "automerge": true
+    },
+    {
+      "description": "Auto-merge ALL GitHub Actions bumps including majors. CI-only, low-risk, and the main source of PR churn on this build repo — keep them fully hands-off. A break is caught by the publish build, not shipped. (Rule is last so it wins the automerge decision for action majors.)",
+      "matchManagers": ["github-actions"],
       "automerge": true
     }
   ]

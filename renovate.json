@@ -7,7 +7,7 @@
   "labels": ["Chore"],
   "packageRules": [
     {
-      "description": "Track ISC's kea-dhcp4/kea-dhcp6 (cloudsmith) and bump each Dockerfile's ARG VERSION. Both components track the same Kea release, so Renovate groups them into one PR by default. Restrict to STABLE releases only: ISC ships stable on even minor series (3.0, 3.2, 3.4, ...) and development snapshots on odd minors (3.1, 3.3), which must never reach the fleet. The even-minor regex excludes odd-minor dev tags.",
+      "description": "Track ISC's kea-dhcp4/kea-dhcp6 (cloudsmith) and bump each Dockerfile's ARG VERSION. Both components track the same Kea release, so Renovate groups them into one PR by default. Restrict to STABLE releases only: Kea ships stable on EVEN minor series (3.0, 3.2, 3.4, ...) and development snapshots on ODD minors (3.1, 3.3), which must never reach the fleet. The even-minor regex excludes odd-minor dev tags.",
       "matchDatasources": ["docker"],
       "matchPackageNames": [
         "docker.cloudsmith.io/isc/docker/kea-dhcp4",
@@ -16,14 +16,30 @@
       "allowedVersions": "/^\\d+\\.\\d*[02468]\\./"
     },
     {
-      "description": "Auto-merge non-major updates. Thin build repo (solo maintainer + Renovate); fleet adoption is still gated by a reviewed Renovate PR in adarigod (which pins KEA_VERSION), and an image only publishes on a SUCCESSFUL build. Base-image and Kea MAJORS stay manual (they change what ships).",
+      "description": "Auto-merge non-major updates by default (thin build repo; images publish only on a SUCCESSFUL build and the fleet adopts via a reviewed adarigod Renovate PR). Kea minor and Alpine bumps are carved out below.",
       "matchUpdateTypes": ["minor", "patch", "digest", "pin"],
       "automerge": true
     },
     {
-      "description": "Auto-merge ALL GitHub Actions bumps including majors. CI-only, low-risk, and the main source of PR churn on this build repo — keep them fully hands-off. A break is caught by the publish build, not shipped. (Rule is last so it wins the automerge decision for action majors.)",
+      "description": "Auto-merge ALL GitHub Actions bumps including majors. CI-only, low-risk, and the main source of PR churn on this build repo — keep them fully hands-off. A break is caught by the publish build.",
       "matchManagers": ["github-actions"],
       "automerge": true
+    },
+    {
+      "description": "Gel with Kea's versioning strategy. Kea's EVEN-minor numbers are distinct STABLE TRAINS (3.2, 3.4, 3.6, ...). A 'minor' bump like 3.2 -> 3.4 is a NEW STABLE FEATURE RELEASE, not a patch: it can change config syntax, hook library names, or require migration. So Kea minors get a REVIEW PR (this overrides the non-major auto-merge above). Only PATCH bumps within a train (e.g. 3.2.0 -> 3.2.1, bugfix/security) auto-merge.",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": [
+        "docker.cloudsmith.io/isc/docker/kea-dhcp4",
+        "docker.cloudsmith.io/isc/docker/kea-dhcp6"
+      ],
+      "matchUpdateTypes": ["minor"],
+      "automerge": false
+    },
+    {
+      "description": "The Alpine base image is coupled to Kea's packaging: the Dockerfiles pin `FROM alpine:<v>` to the Alpine release ISC builds Kea packages for (see the in-Dockerfile note). Bumping Alpine ahead of Kea-package availability breaks the apk install, so Alpine bumps get a REVIEW PR rather than auto-merging.",
+      "matchDatasources": ["docker"],
+      "matchDepNames": ["alpine"],
+      "automerge": false
     }
   ]
 }
